@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoTrack - Sustainable Lifestyle & Carbon Tracking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .carbon-card {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .carbon-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(5, 150, 105, 0.2);
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.5s ease-in-out;
+        }
+        
+        .tab-active {
+            color: #059669;
+            border-bottom: 2px solid #059669;
+        }
+        
+        .partner-card {
+            transition: all 0.3s ease;
+        }
+        
+        .partner-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .challenge-card {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+        
+        .input-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        
+        .input-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #059669;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        .input-slider::-webkit-slider-runnable-track {
+            height: 6px;
+            background: #d1fae5;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full glass-panel z-50 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                    <span class="font-bold text-xl text-gray-900 tracking-tight">EcoTrack</span>
+                </div>
+                
+                <div class="hidden md:flex space-x-8">
+                    <button onclick="showSection('dashboard')" class="nav-btn tab-active px-3 py-2 text-sm font-medium transition-colors" data-section="dashboard">Dashboard</button>
+                    <button onclick="showSection('tracker')" class="nav-btn px-3 py-2 text-sm font-medium text-gray-600 hover:text-green-600 transition-colors" data-section="tracker">Log Activity</button>
+                    <button onclick="showSection('partners')" class="nav-btn px-3 py-2 text-sm font-medium text-gray-600 hover:text-green-600 transition-colors" data-section="partners">Partners</button>
+                    <button onclick="showSection('challenges')" class="nav-btn px-3 py-2 text-sm font-medium text-gray-600 hover:text-green-600 transition-colors" data-section="challenges">Challenges</button>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="hidden sm:flex items-center space-x-2 bg-yellow-100 px-3 py-1 rounded-full">
+                        <i class="fas fa-coins text-yellow-600"></i>
+                        <span class="font-semibold text-yellow-800" id="ecoPoints">0</span>
+                    </div>
+                    <button class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors">
+                        <i class="fas fa-user text-gray-600"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section-content space-y-6">
+            <!-- Hero Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 slide-in">
+                <div class="carbon-card rounded-2xl p-6 text-white relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-10 -mt-10"></div>
+                    <div class="relative z-10">
+                        <p class="text-green-100 text-sm font-medium mb-1">Monthly Carbon Footprint</p>
+                        <div class="flex items-baseline space-x-2">
+                            <h2 class="text-4xl font-bold" id="monthlyEmissions">110.5</h2>
+                            <span class="text-lg">kg CO₂e</span>
+                        </div>
+                        <div class="mt-4 flex items-center text-sm text-green-100">
+                            <i class="fas fa-arrow-down mr-1"></i>
+                            <span>30% vs last month</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">Transport Emissions</p>
+                            <h3 class="text-2xl font-bold text-gray-900">47.4 kg</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                            <i class="fas fa-bicycle text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-500 h-2 rounded-full" style="width: 65%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">43% of monthly total</p>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">Food Emissions</p>
+                            <h3 class="text-2xl font-bold text-gray-900">63.1 kg</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600">
+                            <i class="fas fa-utensils text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-orange-500 h-2 rounded-full" style="width: 59%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">57% of monthly total</p>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass-panel rounded-2xl p-6 border border-gray-200 slide-in" style="animation-delay: 0.1s">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-bold text-gray-900">Emissions Trend</h3>
+                        <select class="text-sm border-gray-300 rounded-lg bg-gray-50 px-3 py-1">
+                            <option>Last 6 Months</option>
+                            <option>Last Year</option>
+                        </select>
+                    </div>
+                    <div style="height: 400px; position: relative;">
+                        <canvas id="emissionsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-6 border border-gray-200 slide-in" style="animation-delay: 0.2s">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-bold text-gray-900">Transport Mode Split</h3>
+                        <span class="text-sm text-gray-500">This Week</span>
+                    </div>
+                    <div style="height: 400px; position: relative;">
+                        <canvas id="transportChart"></canvas>
+                    </div>  
+                </div>
+            </div>
+
+            <!-- KPIs Grid -->
+            <div class="glass-panel rounded-2xl p-6 border border-gray-200 slide-in" style="animation-delay: 0.3s">
+                <h3 class="text-lg font-bold text-gray-900 mb-6">Sustainability KPIs</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div class="relative w-24 h-24 mx-auto mb-3">
+                            <svg class="progress-ring w-24 h-24">
+                                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+                                <circle cx="48" cy="48" r="40" fill="none" stroke="#10b981" stroke-width="8" 
+                                        stroke-dasharray="251.2" stroke-dashoffset="62.8" stroke-linecap="round" class="progress-ring-circle"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-xl font-bold text-gray-900">75%</span>
+                            </div>
+                        </div>
+                        <p class="text-sm font-medium text-gray-600">Reduction vs Baseline</p>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="relative w-24 h-24 mx-auto mb-3">
+                            <svg class="progress-ring w-24 h-24">
+                                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+                                <circle cx="48" cy="48" r="40" fill="none" stroke="#3b82f6" stroke-width="8" 
+                                        stroke-dasharray="251.2" stroke-dashoffset="100.5" stroke-linecap="round" class="progress-ring-circle"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-xl font-bold text-gray-900">12</span>
+                            </div>
+                        </div>
+                        <p class="text-sm font-medium text-gray-600">Plant-based Meals</p>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="relative w-24 h-24 mx-auto mb-3">
+                            <svg class="progress-ring w-24 h-24">
+                                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+                                <circle cx="48" cy="48" r="40" fill="none" stroke="#f59e0b" stroke-width="8" 
+                                        stroke-dasharray="251.2" stroke-dashoffset="125.6" stroke-linecap="round" class="progress-ring-circle"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-xl font-bold text-gray-900">8</span>
+                            </div>
+                        </div>
+                        <p class="text-sm font-medium text-gray-600">Partner Visits</p>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="relative w-24 h-24 mx-auto mb-3">
+                            <svg class="progress-ring w-24 h-24">
+                                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+                                <circle cx="48" cy="48" r="40" fill="none" stroke="#8b5cf6" stroke-width="8" 
+                                        stroke-dasharray="251.2" stroke-dashoffset="50.2" stroke-linecap="round" class="progress-ring-circle"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-xl font-bold text-gray-900">92%</span>
+                            </div>
+                        </div>
+                        <p class="text-sm font-medium text-gray-600">Active Days</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="glass-panel rounded-2xl p-6 border border-gray-200 slide-in" style="animation-delay: 0.4s">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-bold text-gray-900">Recent Activities</h3>
+                    <button class="text-green-600 text-sm font-medium hover:text-green-700">View All</button>
+                </div>
+                <div class="space-y-4" id="recentActivities"></div>
+            </div>
+        </section>
+
+        <!-- Activity Tracker Section -->
+        <section id="tracker" class="section-content hidden space-y-6">
+            <div class="max-w-2xl mx-auto">
+                <div class="glass-panel rounded-2xl p-8 border border-gray-200">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Log New Activity</h2>
+                    
+                    <!-- Category Tabs -->
+                    <div class="flex space-x-1 bg-gray-100 p-1 rounded-xl mb-8">
+                        <button onclick="setActivityCategory('transport')" class="activity-tab flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all bg-white text-green-700 shadow-sm" data-category="transport">
+                            <i class="fas fa-bicycle mr-2"></i>Transport
+                        </button>
+                        <button onclick="setActivityCategory('food')" class="activity-tab flex-1 py-3 px-4 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 transition-all" data-category="food">
+                            <i class="fas fa-utensils mr-2"></i>Food
+                        </button>
+                        <button onclick="setActivityCategory('shopping')" class="activity-tab flex-1 py-3 px-4 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 transition-all" data-category="shopping">
+                            <i class="fas fa-shopping-bag mr-2"></i>Shopping
+                        </button>
+                    </div>
+
+                    <!-- Transport Form -->
+                    <div id="transport-form" class="activity-form space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Transport Mode</label>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <button onclick="selectTransport('walk')" class="transport-option p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 transition-all text-center" data-mode="walk">
+                                    <i class="fas fa-walking text-2xl text-gray-600 mb-2"></i>
+                                    <p class="text-sm font-medium">Walk</p>
+                                </button>
+                                <button onclick="selectTransport('bike')" class="transport-option p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 transition-all text-center" data-mode="bike">
+                                    <i class="fas fa-bicycle text-2xl text-gray-600 mb-2"></i>
+                                    <p class="text-sm font-medium">Cycle</p>
+                                </button>
+                                <button onclick="selectTransport('bus')" class="transport-option p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 transition-all text-center" data-mode="bus">
+                                    <i class="fas fa-bus text-2xl text-gray-600 mb-2"></i>
+                                    <p class="text-sm font-medium">Bus</p>
+                                </button>
+                                <button onclick="selectTransport('car')" class="transport-option p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 transition-all text-center" data-mode="car">
+                                    <i class="fas fa-car text-2xl text-gray-600 mb-2"></i>
+                                    <p class="text-sm font-medium">Car</p>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Distance (km)</label>
+                            <input type="range" min="0.5" max="50" step="0.5" value="5" class="input-slider w-full mb-2" id="transportDistance" oninput="updateDistanceLabel(this.value)">
+                            <div class="flex justify-between text-sm text-gray-600">
+                                <span>0.5 km</span>
+                                <span class="font-bold text-green-600 text-lg" id="distanceLabel">5 km</span>
+                                <span>50 km</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-green-50 rounded-xl p-4 border border-green-200">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-700">Estimated Emissions:</span>
+                                <span class="text-2xl font-bold text-green-700" id="transportEmissions">0 kg CO₂e</span>
+                            </div>
+                            <p class="text-xs text-gray-600 mt-1" id="transportComparison">Select a transport mode to see emissions</p>
+                        </div>
+
+                        <button onclick="logTransport()" class="w-full bg-green-600 text-white py-4 rounded-xl font-semibold hover:bg-green-700 transition-all transform hover:scale-[1.02] shadow-lg shadow-green-200">
+                            Log Activity & Earn Points
+                        </button>
+                    </div>
+
+                    <!-- Food Form -->
+                    <div id="food-form" class="activity-form hidden space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Meal Type</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="selectMeal('vegan')" class="meal-option p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 transition-all text-left" data-meal="vegan">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-seedling text-green-600 text-xl mr-3"></i>
+                                        <div>
+                                            <p class="font-medium">Plant-based</p>
+                                            <p class="text-xs text-gray-500">0.5 kg CO₂e</p>
+                                        </div>
+                                    </div>
+                                </button>
+                                <button onclick="selectMeal('vegetarian')" class="meal-option p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 transition-all text-left" data-meal="vegetarian">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-cheese text-yellow-600 text-xl mr-3"></i>
+                                        <div>
+                                            <p class="font-medium">Vegetarian</p>
+                                            <p class="text-xs text-gray-500">1.2 kg CO₂e</p>
+                                        </div>
+                                    </div>
+                                </button>
+                                <button onclick="selectMeal('chicken')" class="meal-option p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 transition-all text-left" data-meal="chicken">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-drumstick-bite text-orange-600 text-xl mr-3"></i>
+                                        <div>
+                                            <p class="font-medium">Chicken</p>
+                                            <p class="text-xs text-gray-500">2.1 kg CO₂e</p>
+                                        </div>
+                                    </div>
+                                </button>
+                                <button onclick="selectMeal('beef')" class="meal-option p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 transition-all text-left" data-meal="beef">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-hamburger text-red-600 text-xl mr-3"></i>
+                                        <div>
+                                            <p class="font-medium">Beef</p>
+                                            <p class="text-xs text-gray-500">8.5 kg CO₂e</p>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button onclick="logFood()" class="w-full bg-green-600 text-white py-4 rounded-xl font-semibold hover:bg-green-700 transition-all transform hover:scale-[1.02] shadow-lg shadow-green-200">
+                            Log Meal & Earn Points
+                        </button>
+                    </div>
+
+                    <!-- Shopping Form -->
+                    <div id="shopping-form" class="activity-form hidden space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Purchase Type</label>
+                            <div class="space-y-3">
+                                <button onclick="selectPurchase('secondhand')" class="purchase-option w-full p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 transition-all text-left flex items-center justify-between" data-purchase="secondhand">
+                                    <div class="flex items-center">
+                                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                                            <i class="fas fa-recycle text-purple-600"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium">Second-hand/Thrift</p>
+                                            <p class="text-xs text-gray-500">90% less emissions than new</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-green-600 font-bold">+50 pts</span>
+                                </button>
+                                
+                                <button onclick="selectPurchase('local')" class="purchase-option w-full p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 transition-all text-left flex items-center justify-between" data-purchase="local">
+                                    <div class="flex items-center">
+                                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                                            <i class="fas fa-store text-blue-600"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium">Local Business</p>
+                                            <p class="text-xs text-gray-500">Reduced transport emissions</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-green-600 font-bold">+30 pts</span>
+                                </button>
+                                
+                                <button onclick="selectPurchase('refill')" class="purchase-option w-full p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 transition-all text-left flex items-center justify-between" data-purchase="refill">
+                                    <div class="flex items-center">
+                                        <div class="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center mr-4">
+                                            <i class="fas fa-bottle-water text-teal-600"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium">Refill/Zero Waste</p>
+                                            <p class="text-xs text-gray-500">No packaging waste</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-green-600 font-bold">+40 pts</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button onclick="logShopping()" class="w-full bg-green-600 text-white py-4 rounded-xl font-semibold hover:bg-green-700 transition-all transform hover:scale-[1.02] shadow-lg shadow-green-200">
+                            Log Purchase & Earn Points
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Partners Section -->
+        <section id="partners" class="section-content hidden space-y-6">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Sustainable Partners</h2>
+                <p class="text-gray-600">Discover local eco-friendly businesses and earn exclusive rewards</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="partner-card glass-panel rounded-2xl overflow-hidden border border-gray-200 bg-white">
+                    <div class="h-48 bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
+                        <i class="fas fa-bicycle text-6xl text-white opacity-80"></i>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-lg font-bold text-gray-900">GreenCycle Bike Share</h3>
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">Transport</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">Shared electric bikes and scooters across the city. Zero emissions, maximum convenience.</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center text-yellow-500 text-sm">
+                                <i class="fas fa-star mr-1"></i>
+                                <span class="font-medium">4.8</span>
+                                <span class="text-gray-400 ml-1">(234 reviews)</span>
+                            </div>
+                            <button onclick="claimReward('bike')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                                20% Off
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="partner-card glass-panel rounded-2xl overflow-hidden border border-gray-200 bg-white">
+                    <div class="h-48 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+                        <i class="fas fa-utensils text-6xl text-white opacity-80"></i>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-lg font-bold text-gray-900">Root & Stem Café</h3>
+                            <span class="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium">Food</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">100% plant-based restaurant sourcing ingredients from local organic farms within 50km.</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center text-yellow-500 text-sm">
+                                <i class="fas fa-star mr-1"></i>
+                                <span class="font-medium">4.9</span>
+                                <span class="text-gray-400 ml-1">(189 reviews)</span>
+                            </div>
+                            <button onclick="claimReward('cafe')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                                Free Coffee
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="partner-card glass-panel rounded-2xl overflow-hidden border border-gray-200 bg-white">
+                    <div class="h-48 bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center">
+                        <i class="fas fa-tshirt text-6xl text-white opacity-80"></i>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-lg font-bold text-gray-900">Renewal Thrift</h3>
+                            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">Shopping</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">Curated second-hand fashion. Quality clothing with 95% less carbon footprint than fast fashion.</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center text-yellow-500 text-sm">
+                                <i class="fas fa-star mr-1"></i>
+                                <span class="font-medium">4.7</span>
+                                <span class="text-gray-400 ml-1">(312 reviews)</span>
+                            </div>
+                            <button onclick="claimReward('thrift')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                                $10 Credit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Challenges Section -->
+        <section id="challenges" class="section-content hidden space-y-6">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Eco Challenges</h2>
+                <p class="text-gray-600">Join challenges, compete with friends, and earn bonus rewards</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="challenge-card rounded-2xl p-6 text-white relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full -mr-20 -mt-20"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">Active</span>
+                                <span class="text-sm opacity-90">3 days left</span>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-2">Zero Emissions Week</h3>
+                            <p class="text-blue-100 mb-4">Use only walking, cycling, or public transport for 7 consecutive days</p>
+                            <div class="bg-white/20 rounded-full h-2 mb-2">
+                                <div class="bg-white rounded-full h-2" style="width: 71%"></div>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span>5/7 days completed</span>
+                                <span class="font-bold">500 pts reward</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl p-6 border border-gray-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">Easy</span>
+                                <h3 class="text-xl font-bold text-gray-900 mt-2">Plant Power Week</h3>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-2xl font-bold text-green-600">200</span>
+                                <span class="text-sm text-gray-600">pts</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 mb-4">Eat only vegetarian or vegan meals for 7 days</p>
+                        <button onclick="joinChallenge('plant')" class="w-full bg-gray-900 text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-colors">
+                            Join Challenge
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-6 border border-gray-200 h-fit">
+                    <h3 class="text-lg font-bold text-gray-900 mb-6">This Month's Leaders</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3 p-3 bg-yellow-50 rounded-xl border border-yellow-200">
+                            <div class="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-white font-bold">1</div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-gray-900">Sarah Chen</p>
+                                <p class="text-xs text-gray-600">142 kg saved</p>
+                            </div>
+                            <span class="font-bold text-yellow-600">2,840 pts</span>
+                        </div>
+                        
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold">2</div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-gray-900">Marcus Johnson</p>
+                                <p class="text-xs text-gray-600">128 kg saved</p>
+                            </div>
+                            <span class="font-bold text-gray-600">2,560 pts</span>
+                        </div>
+                        
+                        <div class="flex items-center space-x-3 p-3 bg-orange-50 rounded-xl border border-orange-200">
+                            <div class="w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center text-white font-bold">3</div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-gray-900">Emma Wilson</p>
+                                <p class="text-xs text-gray-600">115 kg saved</p>
+                            </div>
+                            <span class="font-bold text-orange-600">2,300 pts</span>
+                        </div>
+
+                        <div class="flex items-center space-x-3 p-3 rounded-xl">
+                            <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold">4</div>
+                            <div class="flex-1">
+                                <p class="font-semibold text-gray-900">You</p>
+                                <p class="text-xs text-gray-600">98 kg saved</p>
+                            </div>
+                            <span class="font-bold text-gray-600">1,960 pts</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <div class="bg-gray-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center space-x-3">
+            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                <i class="fas fa-check"></i>
+            </div>
+            <div>
+                <p class="font-semibold" id="toastTitle">Success!</p>
+                <p class="text-sm text-gray-300" id="toastMessage">Activity logged successfully</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let currentCategory = 'transport';
+        let selectedTransport = null;
+        let selectedMeal = null;
+        let selectedPurchase = null;
+        let ecoPoints = 2450;
+
+        // Emission Factors (kg CO2e per unit)
+        const emissionFactors = {
+            walk: 0,
+            bike: 0,
+            bus: 0.089,
+            car: 0.171,
+            vegan: 0.5,
+            vegetarian: 1.2,
+            chicken: 2.1,
+            beef: 8.5,
+            secondhand: 0.5,
+            local: 0.8,
+            refill: 0.3
+        };
+
+        // Initialize Charts
+        function initCharts() {
+            // Emissions Trend Chart
+            const ctx1 = document.getElementById('emissionsChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Your Emissions',
+                        data: [185, 172, 168, 155, 148, 142.5],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Average User',
+                        data: [190, 188, 185, 182, 180, 178],
+                        borderColor: '#9ca3af',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'kg CO₂e'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Transport Mode Chart
+            const ctx2 = document.getElementById('transportChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Walking', 'Cycling', 'Public Transport', 'Car'],
+                    datasets: [{
+                        data: [25, 35, 30, 10],
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Navigation
+        function showSection(sectionId) {
+            document.querySelectorAll('.section-content').forEach(section => {
+                section.classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('tab-active');
+                btn.classList.add('text-gray-600');
+            });
+            document.querySelector(`[data-section="${sectionId}"]`).classList.add('tab-active');
+            document.querySelector(`[data-section="${sectionId}"]`).classList.remove('text-gray-600');
+        }
+
+        // Activity Tracker Functions
+        function setActivityCategory(category) {
+            currentCategory = category;
+            document.querySelectorAll('.activity-tab').forEach(tab => {
+                if(tab.dataset.category === category) {
+                    tab.classList.add('bg-white', 'text-green-700', 'shadow-sm');
+                    tab.classList.remove('text-gray-600');
+                } else {
+                    tab.classList.remove('bg-white', 'text-green-700', 'shadow-sm');
+                    tab.classList.add('text-gray-600');
+                }
+            });
+            document.querySelectorAll('.activity-form').forEach(form => {
+                form.classList.add('hidden');
+            });
+            document.getElementById(`${category}-form`).classList.remove('hidden');
+        }
+
+        function selectTransport(mode) {
+            selectedTransport = mode;
+            document.querySelectorAll('.transport-option').forEach(opt => {
+                if(opt.dataset.mode === mode) {
+                    opt.classList.add('border-green-500', 'bg-green-50');
+                    opt.classList.remove('border-gray-200');
+                } else {
+                    opt.classList.remove('border-green-500', 'bg-green-50');
+                    opt.classList.add('border-gray-200');
+                }
+            });
+            calculateTransportEmissions();
+        }
+
+        function updateDistanceLabel(value) {
+            document.getElementById('distanceLabel').textContent = value + ' km';
+            calculateTransportEmissions();
+        }
+
+        function calculateTransportEmissions() {
+            if(!selectedTransport) return;
+            const distance = parseFloat(document.getElementById('transportDistance').value);
+            const emissions = (emissionFactors[selectedTransport] * distance).toFixed(2);
+            document.getElementById('transportEmissions').textContent = emissions + ' kg CO₂e';
+            
+            let comparison = '';
+            if(selectedTransport === 'walk' || selectedTransport === 'bike') {
+                comparison = 'Zero emissions! Great for your health and the planet 🌱';
+            } else if(selectedTransport === 'bus') {
+                comparison = '80% less than driving alone! 🚌';
+            } else {
+                comparison = 'Consider cycling or public transport to reduce emissions 🚲';
+            }
+            document.getElementById('transportComparison').textContent = comparison;
+        }
+
+        function selectMeal(meal) {
+            selectedMeal = meal;
+            document.querySelectorAll('.meal-option').forEach(opt => {
+                if(opt.dataset.meal === meal) {
+                    opt.classList.add('border-green-500', 'bg-green-50');
+                    opt.classList.remove('border-gray-200');
+                } else {
+                    opt.classList.remove('border-green-500', 'bg-green-50');
+                    opt.classList.add('border-gray-200');
+                }
+            });
+        }
+
+        function selectPurchase(type) {
+            selectedPurchase = type;
+            document.querySelectorAll('.purchase-option').forEach(opt => {
+                if(opt.dataset.purchase === type) {
+                    opt.classList.add('border-green-500', 'bg-green-50');
+                    opt.classList.remove('border-gray-200');
+                } else {
+                    opt.classList.remove('border-green-500', 'bg-green-50');
+                    opt.classList.add('border-gray-200');
+                }
+            });
+        }
+
+        function logTransport() {
+            if(!selectedTransport) {
+                showToast('Error', 'Please select a transport mode');
+                return;
+            }
+            const distance = document.getElementById('transportDistance').value;
+            const emissions = (emissionFactors[selectedTransport] * distance).toFixed(2);
+            const points = selectedTransport === 'car' ? 10 : selectedTransport === 'bus' ? 25 : 50;
+            addActivity('Transport', `${selectedTransport} for ${distance}km`, emissions, points);
+            updatePoints(points);
+            showToast('Activity Logged!', `You earned ${points} eco-points`);
+            selectedTransport = null;
+            document.querySelectorAll('.transport-option').forEach(opt => {
+                opt.classList.remove('border-green-500', 'bg-green-50');
+                opt.classList.add('border-gray-200');
+            });
+        }
+
+        function logFood() {
+            if(!selectedMeal) {
+                showToast('Error', 'Please select a meal type');
+                return;
+            }
+            const emissions = emissionFactors[selectedMeal];
+            const points = selectedMeal === 'beef' ? 5 : selectedMeal === 'chicken' ? 15 : selectedMeal === 'vegetarian' ? 30 : 50;
+            addActivity('Food', `${selectedMeal} meal`, emissions, points);
+            updatePoints(points);
+            showToast('Meal Logged!', `You earned ${points} eco-points`);
+            selectedMeal = null;
+            document.querySelectorAll('.meal-option').forEach(opt => {
+                opt.classList.remove('border-green-500', 'bg-green-50');
+                opt.classList.add('border-gray-200');
+            });
+        }
+
+        function logShopping() {
+            if(!selectedPurchase) {
+                showToast('Error', 'Please select a purchase type');
+                return;
+            }
+            const points = selectedPurchase === 'secondhand' ? 50 : selectedPurchase === 'refill' ? 40 : 30;
+            addActivity('Shopping', `${selectedPurchase} purchase`, 0.5, points);
+            updatePoints(points);
+            showToast('Purchase Logged!', `You earned ${points} eco-points`);
+            selectedPurchase = null;
+            document.querySelectorAll('.purchase-option').forEach(opt => {
+                opt.classList.remove('border-green-500', 'bg-green-50');
+                opt.classList.add('border-gray-200');
+            });
+        }
+
+        function addActivity(type, description, emissions, points) {
+            const activitiesDiv = document.getElementById('recentActivities');
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const icons = {'Transport': 'fa-bicycle', 'Food': 'fa-utensils', 'Shopping': 'fa-shopping-bag'};
+            const colors = {'Transport': 'blue', 'Food': 'orange', 'Shopping': 'purple'};
+            
+            const activityHTML = `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 slide-in">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-${colors[type]}-100 rounded-xl flex items-center justify-center text-${colors[type]}-600">
+                            <i class="fas ${icons[type]} text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">${type}</p>
+                            <p class="text-sm text-gray-600">${description}</p>
+                            <p class="text-xs text-gray-400">${time}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-medium text-gray-900">${emissions} kg CO₂e</p>
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            +${points} pts
+                        </span>
+                    </div>
+                </div>
+            `;
+            activitiesDiv.insertAdjacentHTML('afterbegin', activityHTML);
+        }
+
+        function updatePoints(points) {
+            ecoPoints += points;
+            document.getElementById('ecoPoints').textContent = ecoPoints.toLocaleString();
+        }
+
+        function claimReward(partner) {
+            const rewards = {
+                'bike': '20% off bike rental',
+                'cafe': 'Free coffee with meal',
+                'thrift': '$10 store credit'
+            };
+            showToast('Reward Claimed!', `You've unlocked: ${rewards[partner]}`);
+            updatePoints(100);
+        }
+
+        function joinChallenge(challenge) {
+            showToast('Challenge Joined!', 'Good luck! Check back daily to log progress.');
+        }
+
+        function showToast(title, message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            addActivity('Transport', 'Bus commute for 8km', 0.71, 25);
+            addActivity('Food', 'Plant-based lunch', 0.5, 50);
+            addActivity('Shopping', 'Second-hand textbook', 0.2, 50);
+        });
+    </script>
+</body>
+</html>
